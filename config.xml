@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<module>
+	<name>statsn80_lai</name>
+	<displayName><![CDATA[N80 - L&atilde;i theo đơn]]></displayName>
+	<version><![CDATA[3]]></version>
+	<description><![CDATA[Danh s&aacute;ch đơn h&agrave;ng]]></description>
+	<author><![CDATA[N80-POS]]></author>
+	<tab><![CDATA[analytics_stats]]></tab>
+	<is_configurable>0</is_configurable>
+	<need_instance>1</need_instance>
+	<limited_countries></limited_countries>
+</module>
