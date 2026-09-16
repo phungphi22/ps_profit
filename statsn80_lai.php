@@ -198,7 +198,7 @@ class statsn80_lai extends ModuleGrid
 			'.ModuleGrid::engine($engineParams).'
 		</fieldset>';
 		
-		$sEtQuyLo=$this->LayLN('T',$sCust_id);
+		$sEtQuyLo=$this->LayLN();
 		if ($sEtQuyLo["V2"] != '')
 		{
 			$Tong = Db::getInstance()->GetRow($sEtQuyLo["V2"]);
@@ -307,7 +307,29 @@ class statsn80_lai extends ModuleGrid
 	
 		$dateBetween = $this->getDate();
 		$this->_totalCount = $this->getTotalCount($dateBetween,$sCust_id);
-		$this->_query = '
+		
+
+		$sLN = $this->LayLN();	
+		if ($sLN != '') $this->_query = $sLN;	
+		
+		if (Validate::IsName($this->_sort))
+		{
+			$this->_query .= ' ORDER BY `'.$this->_sort.'`';
+			if (isset($this->_direction))
+				$this->_query .= ' '.$this->_direction;
+		}
+		if (($this->_start === 0 OR Validate::IsUnsignedInt($this->_start)) AND Validate::IsUnsignedInt($this->_limit))
+			$this->_query .= ' LIMIT '.$this->_start.', '.($this->_limit);
+		$this->_values = Db::getInstance()->ExecuteS($this->_query);
+	}
+
+
+
+private function LayLN()
+{
+	$sEtQuyLo = null; $sDM = "";
+	$dateBetween = $this->getDate();
+	$sEtQuyLo = '
 		SELECT o.id_customer,o.id_order ,o.invoice_date, ROUND( o.total_paid , 2 ) AS total, ROUND((o.total_paid - total_paid_tax_excl - o.total_shipping + o.total_shipping_tax_excl) , 2 ) AS TaxTotal, ROUND( o.total_shipping  , 2 ) AS ShipByCust,0 as ShipBySeller, ((
 			SELECT ROUND(SUM(p.wholesale_price * od.product_quantity), 2)
 			FROM '._DB_PREFIX_.'order_detail od
@@ -329,56 +351,6 @@ class statsn80_lai extends ModuleGrid
 		WHERE o.valid =1
 		AND o.total_paid >= 0 AND o.`invoice_date` BETWEEN '.$dateBetween.'
 		GROUP BY o.`id_order`';
-
-		$sLN = $this->LayLN('LN',$sCust_id);	
-		if ($sLN != '') $this->_query = $sLN["V2"];	
-		
-		if (Validate::IsName($this->_sort))
-		{
-			$this->_query .= ' ORDER BY `'.$this->_sort.'`';
-			if (isset($this->_direction))
-				$this->_query .= ' '.$this->_direction;
-		}
-		if (($this->_start === 0 OR Validate::IsUnsignedInt($this->_start)) AND Validate::IsUnsignedInt($this->_limit))
-			$this->_query .= ' LIMIT '.$this->_start.', '.($this->_limit);
-		$this->_values = Db::getInstance()->ExecuteS($this->_query);
-	}
-
-
-
-private function LayLN($s)
-{
-	$sEtQuyLo = null; $sDM = "";
-	$dateBetween = $this->getDate();
-	$wsdl = "http://localhost/Server/srvSD_HKD_Profit.php?wsdl";
-	$client1 = new nusoap_client($wsdl, 'wsdl');
-		
-	$result1 = $client1->call('wca_GetFirst', array('ProductName'=>$this->_ProductRef,'prefix'=>_DB_PREFIX_));
-	$arr = explode(";", $result1); 
-		
-	$sVal = Db::getInstance()->ExecuteS($arr[0]);	
-	$iCount=Db::getInstance()->NumRows();
-	
-	$sConfig = Configuration::get('PS_SHIPPING_HANDLING').'|'.Configuration::get('PS_SHIPPING_FREE_PRICE').'|'.Configuration::get('PS_SHIPPING_FREE_WEIGHT').'|'._DB_PREFIX_.'|0'.'|'.$this->_sTaxEachProduct ;
-	
-	if ($iCount > 0)
-	{
-		If($sVal[0]["value"] != '')
-		{
-			$sDM = Db::getInstance()->ExecuteS($arr[1]);
-			
-			if ($s == 'LN')
-			{
-				$result2 = $client1->call('wca_fcnCP', array('sCMH'=>trim($sVal[0]["value"]),'TM'=>trim($sDM[0]["dm"]),'TenSP'=>$this->_ProductRef,'KhoangNgay'=>$dateBetween,'sConfig'=>$sConfig,'sURL'=>$_SERVER["REQUEST_URI"]));
-			}
-			else
-			{				
-				$result2 = $client1->call('wca_fcnTong', array('sCMH'=>trim($sVal[0]["value"]),'TM'=>trim($sDM[0]["dm"]),'TenSP'=>$this->_ProductRef,'KhoangNgay'=>$dateBetween,'sConfig'=>$sConfig,'sURL'=>$_SERVER["REQUEST_URI"]));
-			}			
-			
-			//$sEtQuyLo = $result2["V2"];
-			$sEtQuyLo = $result2;
-		}
 	}
 		
 	
